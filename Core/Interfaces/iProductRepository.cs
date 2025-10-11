@@ -3,7 +3,7 @@ using Core.Entities;
 
 namespace Core.Interfaces;
 
-public interface iProductRepository
+public interface IProductRepository
 {
     //Metode sa Get su Asinhrone zato što pozivaju bazu da dadne podatke
     //Ostale metode nisu jer delete, insert i modify se primjenjuju kada se 

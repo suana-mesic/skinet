@@ -1,6 +1,7 @@
 using System;
 using Core.Entities;
 using Core.Interfaces;
+using Core.Specifications;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ namespace API.Controllers;
 //ruta će se zvati ProductsController-Controller=api/products
 //svaki put kada se treba instancirati iProductRepository (interfejs)
 //instancirat će se zapravo klasa ProductRepository (tako smo napisali servis u Program.cs)
-public class ProductsController(iProductRepository repo) : ControllerBase
+public class ProductsController(IGenericRepository<Product> repo) : ControllerBase
 {
     //izbrisat ćemo stari ctor i umjesto da u ovom kontroleru koristimo StoreContext
     //koristit ćemo ProductRepository (jer on implementira sve ove metode kjoje su bile u ovom kontroleru)
@@ -21,14 +22,17 @@ public class ProductsController(iProductRepository repo) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string? brand, string? type, string? sort)
     {
-        //da bi radilo moramo ga wrappovati u Ok response
-        return Ok(await repo.GetProductsAsync(brand, type, sort));
+        var spec = new ProducSpecification(brand, type, sort);
+
+        var products = await repo.ListAsync(spec);
+
+        return Ok(products);
     }
 
     [HttpGet("{id:int}")] //api/products/2
     public async Task<ActionResult<Product>> GetProduct(int id)
     {
-        var product = await repo.GetProductByIdAsync(id);
+        var product = await repo.GetByIdAsync(id);
 
         if (product == null)
             return NotFound();
@@ -38,9 +42,9 @@ public class ProductsController(iProductRepository repo) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Product>> CreateProduct(Product product)
     {
-        repo.AddProduct(product);
+        repo.Add(product);
 
-        if (await repo.SaveChangesAsync())
+        if (await repo.SaveAllAsync())
         {
             //rezultat ove metode je 
             //Status 201
@@ -62,9 +66,9 @@ public class ProductsController(iProductRepository repo) : ControllerBase
         //Entry funkcija zapravo uzima izmijenjen proizvod i onda samo preko 
         //starog proizvoda prelijepi informacije koje su u novom 
         //(uključujući i one koje nisu promijenjene)
-        repo.UpdateProduct(product);
+        repo.Update(product);
 
-        if (await repo.SaveChangesAsync())
+        if (await repo.SaveAllAsync())
         {
             return NoContent();
         }
@@ -74,34 +78,38 @@ public class ProductsController(iProductRepository repo) : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteProduct(int id)
     {
-        var product = await repo.GetProductByIdAsync(id);
+        var product = await repo.GetByIdAsync(id);
 
         if (product == null)
             return NotFound();
 
-        repo.DeleteProduct(product);
+        repo.Remove(product);
 
-        if (await repo.SaveChangesAsync())
+        if (await repo.SaveAllAsync())
         {
             return NoContent();
         }
 
         return BadRequest("Problem deleting the product");
     }
-    private bool ProductExists(int id)
-    {
-        return repo.ProductExists(id);
-    }
+
     [HttpGet("brands")]
 
     public async Task<ActionResult<IReadOnlyList<string>>> GetBrands()
     {
-        return Ok(await repo.GetBrandsAsync());
+        var spec = new BrandListSpecification();
+        return Ok(await repo.ListAsync(spec));
     }
 
     [HttpGet("types")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetTypes()
     {
-        return Ok(await repo.GetTypesAsync());
+        var spec = new TypeListSpecification();
+        return Ok(await repo.ListAsync(spec));
+    }
+
+    private bool ProductExists(int id)
+    {
+        return repo.Exists(id);
     }
 }

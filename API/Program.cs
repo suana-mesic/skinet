@@ -24,7 +24,8 @@ builder.Services.AddDbContext<StoreContext>(opt =>
 //servis koji je AddScoped - scoped to the request level - živi onoliko dugo koliko traje http request
 //AddSingleton - kreira servis kada aplikacija starta, i gasi se tek kada se aplikacija ugasi
 //AddTransient - scoped to the method level
-builder.Services.AddScoped<iProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 var app = builder.Build();
 

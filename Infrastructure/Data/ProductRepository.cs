@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data;
 
-public class ProductRepository(StoreContext context) : iProductRepository
+public class ProductRepository(StoreContext context) : IProductRepository
 {
     public void AddProduct(Product product)
     {
